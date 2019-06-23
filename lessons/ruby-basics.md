@@ -260,6 +260,8 @@ end
 puts ENV["EDITOR"] # => subl
 ```
 
+[Case statement assignment](ruby-on-rails-intro/case-assignment)
+
 ## Strings
 
 Strings can be written with single quotes and double quotes. Only double quoted strings allow for string interpolation as well as interpretation of special escape characters. With `%Q`, we can create multi-line string.
@@ -446,6 +448,8 @@ puts ({ :one => "one" }) # => {:one=>"one"}
 # Or drop the {} altogether... 
 puts one: "one"# => {:one=>"one"} 
 ```
+
+[Collections Assignment](ruby-on-rails-intro/collections-assignment)
 
 ## Classes
 
@@ -838,4 +842,4 @@ class Another
 end
 ```
 
-```
+[Classes assignment](ruby-on-rails-intro/classes-assignment)
