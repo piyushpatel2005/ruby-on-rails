@@ -142,3 +142,160 @@ end
 
 # => 9
 ```
+
+## Functions
+
+In Ruby, every function/method has at least one class it belongs to. For functions, parenthese are optional both when defining and calling a method. We don't need to declare the datatypes for each parameters. The last expression in the method is the return value for that method, `return` keyword is optional. We can have methods ending with `?`. The methods ending with `!` show methods with side effects.
+
+```ruby
+
+def can_divide_by?(number)
+  return false if number.zero?
+  true
+end
+
+puts can_divide_by? 3 # => true
+puts can_divide_by? 0 # => false
+```
+
+We can also pass default arguments to methods.
+
+```ruby
+def factorial_with_default (n = 5) 
+   n == 0? 1 : n * factorial_with_default(n - 1) 
+end 
+
+puts factorial 5 # => 120
+puts factorial_with_default # => 120 
+puts factorial_with_default(3) # => 6
+```
+
+Splat arguments allow to pass multiple parameters to methods.
+
+```ruby
+def max(one_param, *numbers, another)
+  # Variable length parameters passed in 
+  # become an array
+  numbers.max
+end
+
+puts max("something", 7, 32, -4, "more") # => 32
+```
+
+In Ruby, **blocks** are iterators. They are usually inside curly braces or inside `do...end` keywords.
+
+```ruby
+1.times { puts "Hello World!" }   
+# => Hello World! 
+
+2.times do |index| 
+  if index > 0 
+    puts index 
+  end 
+end 
+# => 1
+
+2.times { |index| puts index if index > 0 }
+```
+
+We can use blocks in our code as follows. With implicit method, we use `block_given?` to verify if the block is given. In the explicit way, we include `&` in argument to see if we received any block. If we received block, we call `call` method of the block.
+
+```ruby
+# Implicit blocks
+def two_times_implicit 
+  return "No block" unless block_given? 
+  yield 
+  yield 
+end 
+
+puts two_times_implicit { print "Hello "} # => Hello 
+										  # => Hello 
+puts two_times_implicit # => No block
+
+# Explicit block
+def two_times_explicit (&i_am_a_block) 
+  return "No block" if i_am_a_block.nil? 
+  i_am_a_block.call 
+  i_am_a_block.call 
+end 
+
+puts two_times_explicit # => No block 
+two_times_explicit { puts "Hello"} # => Hello 
+                                   # => Hello 
+```
+
+## Files
+
+```ruby
+# Reading from a file.
+if File.exist? 'test.txt'
+
+  File.foreach( 'test.txt' ) do |line|
+    puts line.chomp
+  end
+end
+
+# Handling exception
+
+begin
+
+  File.foreach( 'do_not_exist.txt' ) do |line|   
+    puts line.chomp 
+  end
+
+rescue Exception => e
+  puts e.message
+  puts "Let's pretend this didn't happen..."
+end
+
+# Write to a file
+# Closing file automatically once block is executed.
+
+File.open("test1.txt", "w") do |file|  
+  file.puts "One line"
+  file.puts "Another" 
+end
+
+# Read and write to environment variable
+puts ENV["EDITOR"] # => subl
+```
+
+## Strings
+
+Strings can be written with single quotes and double quotes. Only double quoted strings allow for string interpolation as well as interpretation of special escape characters. With `%Q`, we can create multi-line string.
+
+```ruby
+single_quoted = 'ice cream \n followed by it\'s a party!'
+double_quoted = "ice cream \n followed by it\'s a party!" 
+
+puts single_quoted # => ice cream \n followed by it's a party!
+puts double_quoted # => ice cream 
+                   # =>   followed by it's a party! 
+
+def multiply (one, two) 
+  "#{one} multiplied by #{two} equals #{one * two}" 
+end 
+puts multiply(5, 3) 
+# => 5 multiplied by 3 equals 15
+
+my_name = " tim" 
+puts my_name.lstrip.capitalize # => Tim 
+p my_name # => " tim" 
+my_name.lstrip! # (destructive) removes the leading space 
+my_name[0] = 'K' # replace the fist character 
+puts my_name # => Kim 
+
+cur_weather = %Q{It's a hot day outside 
+			     Grab your umbrellas…} 
+
+cur_weather.lines do |line| 
+  line.sub! 'hot', 'rainy' # substitute 'hot' with 'rainy' 
+  puts "#{line.strip}" 
+end 
+# => It's a rainy day outside 
+# => Grab your umbrellas...
+```
+
+Strings api includes many useful methods. Another kind of string is symbol. Symbol is `:` followed by a string. They are highly optimized strings. They are constant names which we don't need to declare before using. Symbols are guaranteed to be unique and immutable. We can convert to string using `to_s` or we can convert string to symbol using `to_sym` method. They are used for method names or keys in Hashes.
+
+We can get all methods names for any object using `"hello".methods.grep /case/` which will give all methods that include "case" word in method names.
