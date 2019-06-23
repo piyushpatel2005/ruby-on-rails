@@ -299,3 +299,151 @@ end
 Strings api includes many useful methods. Another kind of string is symbol. Symbol is `:` followed by a string. They are highly optimized strings. They are constant names which we don't need to declare before using. Symbols are guaranteed to be unique and immutable. We can convert to string using `to_s` or we can convert string to symbol using `to_sym` method. They are used for method names or keys in Hashes.
 
 We can get all methods names for any object using `"hello".methods.grep /case/` which will give all methods that include "case" word in method names.
+
+## Arrays
+
+Arrays are collection of object references. Arrays can be indexed with negative numbers or ranges. In Runy, arrays can be of heterogeneous types in the same array. We can use `%w{str1 str2}` for string array creation. We can append element using `push` or `<<`, remove elements using `pop` or `shift` method. We can pull random element(s) using `sample` method as well as sort or reverse using `sort!` or `reverse!` method.
+Array also has iterator methods like `each`, `select`, `reject` and `map`.
+
+```ruby
+het_arr = [1, "two", :three] # heterogeneous types 
+puts het_arr[1] # => two (array indices start at 0) 
+
+arr_words = %w{ what a great day today! } 
+puts arr_words[-2] # => day
+puts "#{arr_words.first} - #{arr_words.last}" # => what - today! 
+p arr_words[-3, 2] # => ["great", "day"] (go back 3 and take 2) 
+
+# (Range type covered later...)
+p arr_words[2..4] # => ["great", "day", "today!"] 
+
+# Make a String out of array elements separated by ‘,’
+puts arr_words.join(',') # => what,a,great,day,today!
+
+# You want a stack (LIFO)? Sure 
+stack = []; stack << "one"; stack.push ("two") 
+puts stack.pop # => two 
+
+# You need a queue (FIFO)? We have those too... 
+queue = []; queue.push "one"; queue.push "two" 
+puts queue.shift # => one 
+
+a = [5,3,4,2].sort!.reverse! 
+p a # => [5,4,3,2] (actually modifies the array) 
+p a.sample(2) # => 2 random elements
+
+a[6] = 33 
+p a # => [5, 4, 3, 2, nil, nil, 33]
+
+a = [1, 3, 4, 7, 8, 10] 
+a.each { |num| print num } # => 1347810 (no new line) 
+puts # => (print new line) 
+
+new_arr = a.select { |num| num > 4 } 
+p new_arr # => [7, 8, 10] 
+new_arr = a.select { |num| num < 10 }
+           .reject{ |num| num.even? } 
+p new_arr # => [1, 3, 7] 
+
+# Multiply each element by 3 producing new array
+new_arr = a.map {|x| x * 3} 
+p new_arr # => [3, 9, 12, 21, 24, 30] 
+```
+
+**Ranges** are natural consecutive sequences. For example, 1 to 20, 'a' to 'd'. If there are two dots(..), means all inclusive. If there are three dots (...), last element is exclusive. They are efficient as only start and end is stored. They can be converted to an array using `to_a` method.
+
+```ruby
+some_range = 1..3 
+puts some_range.max # => 3 
+puts some_range.include? 2 # => true 
+
+puts (1...10) === 5.3 # => true 
+puts ('a'...'r') === "r" # => false (end-exclusive) 
+
+p ('k'..'z').to_a.sample(2) # => ["k", "w"]
+# or another random array with 2 letters in range
+
+age = 55 
+case age 
+  when 0..12 then puts "Still a baby" 
+  when 13..99 then puts "Teenager at heart!" 
+  else puts "You are getting older..." 
+end 
+# => Teenager at heart!
+```
+
+## Hashes
+
+Hashes are indexed collections of object references. They are created with `{}` or `Hash.new` method. They are known as associative arrays, maps in other languages. Index can be anything in a Hash. The elements are accessed using `[]`. Values are set using `=>`(hash racket) or `[]`.
+If Hash is created with `Hash.new(0)`, then if a key doesn't exists and we try to access a values for that key, we will get 0 else we'll get error.
+
+
+```ruby
+editor_props = { "font" => "Arial", "size" => 12, "color" => "red"} 
+
+# THE ABOVE IS NOT A BLOCK - IT'S A HASH 
+puts editor_props.length # => 3 
+puts editor_props["font"] # => Arial 
+
+editor_props["background"] = "Blue" 
+editor_props.each_pair do |key, value| 
+  puts "Key: #{key} value: #{value}" 
+end
+# => Key: font value: Arial 
+# => Key: size value: 12 
+# => Key: color value: red 
+# => Key: background value: Blue
+
+# Word frequency counter
+word_frequency = Hash.new(0) 
+
+sentence = "Chicka chicka boom boom" 
+sentence.split.each do |word| 
+  word_frequency[word.downcase] += 1 
+end 
+
+p word_frequency # => {"chicka" => 2, "boom" => 2}
+```
+
+After Ruby 1.9, the order of elements inside Hash is maintained. If we use symbols as elements, there is `symbol:` syntax for creating Hash. If Hash is last argument to a method, we can drop `{}`.
+
+```ruby
+family_tree_19 = {oldest: "Jim", older: "Joe", younger: "Jack"} 
+family_tree_19[:youngest] = "Jeremy" 
+p family_tree_19 
+# => {:oldest=>"Jim", :older=>"Joe", :younger=>"Jack“, :youngest => “Jeremy”}
+
+# Named parameter "like" behavior... 
+def adjust_colors (props = {foreground: "red", background: "white"}) 
+  puts "Foreground: #{props[:foreground]}" if props[:foreground] 
+  puts "Background: #{props[:background]}" if props[:background] 
+end 
+adjust_colors # => foreground: red 
+              # => background: white 
+adjust_colors ({ :foreground => "green" }) # => foreground: green 
+# This works as hash is last element in the method.
+adjust_colors background: "yella" # => background: yella 
+adjust_colors :background => "magenta" # => background: magenta
+```
+
+If we don't assign Hash to a variable, and try to print it directly, Ruby interpreter might get confused as shown below.
+
+```ruby
+# Let's say you have a Hash 
+a_hash = { :one => "one" } 
+
+# Then, you output it 
+puts a_hash # => {:one=>"one"} 
+
+# If you try to do it in one step - you get a SyntaxError 
+# puts { :one => "one" } 
+
+# RUBY GETS CONFUSED AND THINKS {} IS A BLOCK!!!
+
+# To get around this - you can use parens 
+puts ({ :one => "one" }) # => {:one=>"one"} 
+
+# Or drop the {} altogether... 
+puts one: "one"# => {:one=>"one"} 
+```
+
