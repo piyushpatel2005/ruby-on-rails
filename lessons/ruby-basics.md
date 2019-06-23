@@ -447,3 +447,395 @@ puts ({ :one => "one" }) # => {:one=>"one"}
 puts one: "one"# => {:one=>"one"} 
 ```
 
+## Classes
+
+Objects are instances of things. Classes are things or blueprints of a thing. Objects contain instance variables (state). Instance variables begin with `@` character. Instance variables are not declared. Objects are created using `new` method on class which calls `initialize` method in class. Object's states are initialized in initializer method. To access instance variables, we have to define getters and setters. Methods by default have public access.
+
+```ruby
+
+class Person 
+  def initialize (name, age) # "CONSTRUCTOR" 
+    @name = name  # we don't need to declare name instance variable
+    @age = age 
+  end 
+  def get_info 
+    @additional_info = "Interesting" 
+    "Name: #{@name}, age: #{@age}" 
+  end 
+end 
+
+person1 = Person.new("Joe", 14) 
+p person1.instance_variables # [:@name, :@age] 
+puts person1.get_info # => Name: Joe, age: 14 
+p person1.instance_variables # [:@name, :@age, :@additional_info] 
+```
+
+```ruby
+# Getters and setters
+
+class Person 
+  def initialize (name, age) # "CONSTRUCTOR" 
+    @name = name 
+    @age = age 
+  end 
+  def name 
+    @name 
+  end 
+  def name= (new_name) 
+    @name = new_name 
+  end 
+end 
+
+person1 = Person.new("Joe", 14) 
+puts person1.name # Joe 
+person1.name = "Mike" 
+puts person1.name # Mike 
+# puts person1.age # undefined method `age' for #<Person:
+```
+
+If we want to create setter and getter methods for all variables, we can easily define them using following.
+
+- `attr_accessor`: getter and setter
+- `attr_reader`: getter only
+- `attr_writer`: setter only
+
+```ruby
+class Person 
+  attr_accessor :name, :age # getters and setters for name and age
+end 
+
+person1 = Person.new 
+p person1.name # => nil 
+person1.name = "Mike" 
+person1.age = 15 
+puts person1.name # => Mike 
+puts person1.age # => 15 
+person1.age = "fifteen" 
+puts person1.age # => fifteen 
+```
+
+If we want to customize initialization of instances, we can define `initialize` method inside class. By default, Person is in an uninitialized state. We also want to control age to some numbers. Such customizations are possible with constructor. Inside instance methods, `self` refers to instances whereas outside instance methods `self` refers to class itself. This allows to create static methods like Java which are classwide.
+
+```ruby
+class Person 
+  attr_reader :age 
+  attr_accessor :name 
+
+  def initialize (name, ageVar) # CONSTRUCTOR 
+    @name = name 
+    self.age = ageVar # call the age= method 
+    puts age 
+  end 
+  def age= (new_age) 
+    @age = new_age unless new_age > 120 
+  end 
+end 
+
+person1 = Person.new("Kim", 13) # => 13 
+puts "My age is #{person1.age}" # => My age is 13 
+person1.age = 130 # Try to change the age 
+puts person1.age # => 13 (The setter didn't allow the change)
+```
+
+`||` operator is used to assign to a variable if it hasn't been initialized like `@x = @x || 5`. The short form of this is `@x ||= 5`.
+
+```ruby
+class Person 
+  attr_reader :age 
+  attr_accessor :name 
+  
+  def initialize (name, age) # CONSTRUCTOR 
+    @name = name 
+    self.age = age # call the age= method 
+  end 
+  def age= (new_age) 
+    @age ||= 5 # default 
+    @age = new_age unless new_age > 120 
+  end 
+end 
+person1 = Person.new("Kim", 130) 
+puts person1.age # => 5 (default) 
+person1.age = 10 # change to 10 
+puts person1.age # => 10 
+person1.age = 200 # Try to change to 200 
+puts person1.age # => 10 (still) 
+```
+
+Class variables begin with `@@`.
+
+```ruby
+# Three ways to define class methods
+class MathFunctions 
+  def self.double(var) # 1. Using self 
+    times_called; var * 2; 
+  end 
+  class << self # 2. Using << self 
+    def times_called 
+      @@times_called ||= 0; @@times_called += 1 
+    end 
+  end 
+end 
+def MathFunctions.triple(var) # 3. Outside of class 
+  times_called; var * 3 
+end
+
+# No instance created! 
+puts MathFunctions.double 5 # => 10 
+puts MathFunctions.triple(3) # => 9 
+puts MathFunctions.times_called # => 3 
+```
+
+Every class implicitly inherits from `Object` and Object inherits from `BasicObject`. Ruby doesn't support multiple inheritance. We can use mixins to get behavior of multiple classes.
+
+```ruby
+class Dog 
+  def to_s 
+    "Dog" 
+  end 
+  def bark 
+    "barks loudly" 
+  end 
+end 
+# SmallDog inherits from Dog class
+class SmallDog < Dog 
+  def bark # Override 
+    "barks quietly" 
+  end 
+end 
+
+dog = Dog.new # (btw, new is a class method) 
+small_dog = SmallDog.new 
+puts "#{dog}1 #{dog.bark}" # => Dog1 barks loudly 
+puts "#{small_dog}2 #{small_dog.bark}" # => Dog2 barks quietly 
+```
+
+## Modules
+
+Module is a container for classes, methods and constants. It serves two main purposes; make namespace and uses of mixins.
+
+```ruby
+# module to separate two classes of same name
+module Sports 
+  class Match
+    attr_accessor :score 
+  end 
+end 
+
+module Patterns 
+  class Match 
+    attr_accessor :complete 
+  end 
+end 
+
+match1 = Sports::Match.new
+match1.score = 45; puts match1.score # => 45
+
+match2 = Patterns::Match.new
+match2.complete = true; puts match2.complete # => true
+```
+
+In object oriented languages, we have interfaces. Mixins provide a way to share (mix-in) ready code among multiple classes. 
+
+```ruby
+# Module as a mixin
+module SayMyName 
+  attr_accessor :name 
+  def print_name 
+    puts "Name: #{@name}" 
+  end 
+end 
+
+class Person 
+  # include SayMyName module and print_name method
+  include SayMyName 
+end 
+class Company 
+  include SayMyName 
+end 
+
+person = Person.new 
+person.name = "Joe" 
+person.print_name # => Name: Joe 
+company = Company.new 
+company.name = "Google & Microsoft LLC" 
+company.print_name # => Name: Google & Microsoft LLC
+```
+
+Array class actually includes Enumerable module. For including this module in your class, we have to provide implementation of `each` method.
+
+```ruby
+# player.rb file
+class Player 
+
+  attr_reader :name, :age, :skill_level
+
+  def initialize (name, age, skill_level) 
+    @name = name 
+    @age = age
+    @skill_level = skill_level 
+  end
+
+  def to_s 
+    "<#{name}: #{skill_level}(SL), #{age}(AGE)>" 
+  end 
+
+end 
+
+# team.rb file
+class Team 
+  include Enumerable # LOTS of functionality
+
+  attr_accessor :name, :players 
+  def initialize (name) 
+    @name = name 
+    @players = [] 
+  end 
+  def add_players (*players) # splat 
+    @players += players
+  end 
+  def to_s 
+    "#{@name} team: #{@players.join(", ")}" 
+  end 
+  def each 
+    @players.each { |player| yield player }
+  end 
+end 
+
+# picks.rb file using team and player classes
+require_relative 'player'
+require_relative 'team'
+
+player1 = Player.new("Bob", 13, 5); player2 = Player.new("Jim", 15, 4.5) 
+player3 = Player.new("Mike", 21, 5) ; player4 = Player.new("Joe", 14, 5) 
+player5 = Player.new("Scott", 16, 3)
+
+red_team = Team.new("Red") 
+red_team.add_players(player1, player2, player3, player4, player5) # (splat) 
+
+# select only players between 14 and 20 and reject any player below 4.5 skill-level
+elig_players = red_team.select {|player| (14..20) === player.age } 
+                       .reject {|player| player.skill_level < 4.5} 
+puts elig_players # => <Jim: 4.5(SL), 15(AGE)>
+          # => <Joe: 5(SL), 14(AGE)>
+```
+
+Methods and classes begin new scope for variables. Outer scope variables do not get carried over to the inner scope. Use `local_variables` method to see which variables are in the current scope.
+
+```ruby
+v1 = "outside"
+
+class MyClass 
+  def my_method
+  	# p v1 EXCEPTION THROWN - no such variable exists
+    v1 = "inside"
+    p v1
+    p local_variables 
+  end 
+end 
+
+p v1 # => outside
+obj = MyClass.new 
+obj.my_method # => inside 
+              # => [:v1] 
+p local_variables # => [:v1, :obj]
+p self # => main
+```
+
+Constants begin with uppercase. Inner scope can see constants defined in outer scope and can also override outer constants. Value, however, remains unchanged outside.
+
+```ruby
+module Test 
+  PI = 3.14 
+  class Test2 
+    def what_is_pi 
+      puts PI 
+    end 
+  end 
+end 
+Test::Test2.new.what_is_pi # => 3.14 
+
+module MyModule 
+  MyConstant = 'Outer Constant' 
+  class MyClass 
+    puts MyConstant # => Outer Constant 
+    MyConstant = 'Inner Constant' 
+    puts MyConstant # => Inner Constant 
+  end
+  puts MyConstant # => Outer Constant 
+end
+```
+
+Blocks inherit outer scope. Block is a closure.
+
+```ruby
+class BankAccount 
+  attr_accessor :id, :amount 
+  def initialize(id, amount) 
+    @id = id 
+    @amount = amount 
+  end 
+end 
+
+acct1 = BankAccount.new(123, 200) 
+acct2 = BankAccount.new(321, 100) 
+acct3 = BankAccount.new(421, -100) 
+accts = [acct1, acct2, acct3] 
+
+total_sum = 0 
+accts.each do |eachAcct| 
+  total_sum += eachAcct.amount 
+end 
+
+puts total_sum # => 200
+```
+
+In block, a variable created inside the block is only available to the block. Parameters to the block are always local to block even if they have same name as variables in the outer scope. We can explicitly declare block-local variables after a semicolon in the block parameter list.
+
+```ruby
+
+arr = [5, 4, 1] 
+cur_number = 10 
+arr.each do |cur_number| 
+  some_var = 10 # NOT available outside the block 
+  print cur_number.to_s + " " # => 5 4 1 
+end 
+puts # print a blank line 
+puts cur_number # => 10 
+
+adjustment = 5 
+arr.each do |cur_number;adjustment|  # treat adjustment as a local variable and not as outer variable
+  adjustment = 10 
+  print "#{cur_number + adjustment} " # => 15 14 11 
+end 
+puts 
+puts adjustment # => 5 (Not affected by the block)
+```
+
+There are three levels of access control in class: public, protected, private
+We can specify access control by using keywords and until another access control, all methods within those lines are having specified access control. By default, access control is public. Public methods can be access by any other class. Protected methods can be accessed from objects of this class or subclasses. Private access control doesn't allow any other class to access these methods with an explicit receiver.
+
+```ruby
+class MyAlgorithm
+  private # all private methods
+    def test1
+      "Private"
+    end
+  protected
+    def test2 # test2 is protected.
+      "Protected"
+    end
+  public
+    def public_again
+      "Public"
+    end
+end
+
+class Another
+  def test1
+    "Private, as declated later on"
+  end
+  private :test1 # another way to define methods as private
+end
+```
+
+```
