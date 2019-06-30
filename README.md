@@ -5,3 +5,5 @@
 2. [Ruby Basics](lessons/ruby-basics.md)
 
 3. [Unit Testing](lessons/testing/README.md)
+
+4. [Rails Intro](lessons/rails-intro/README.md)

@@ -843,3 +843,26 @@ end
 ```
 
 [Classes assignment](ruby-on-rails-intro/classes-assignment)
+
+If we want to make web requests to web services, we can use HTTParty Rubygem.
+
+`gem install httparty`
+
+To use this gem, we first need to include that gem.
+
+```ruby
+require 'httparty'  
+require 'pp'
+
+class Coursera 
+  include HTTParty
+  base_uri = 'https://api.coursera.org/api/catalog.v1/courses'
+  default_params fields: "smallIcon,shortDescription", q: "search"
+  format :json
+
+  def self.for term
+    get("", query: {query: term })["elements"]
+  end
+end
+
+pp Coursera.for "python" # pretty print
