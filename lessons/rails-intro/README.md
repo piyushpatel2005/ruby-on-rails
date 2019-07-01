@@ -97,3 +97,51 @@ To integrate Httparty in Rails, we install httparty. We need to restart the serv
 
 We can specify root path in routes using `root "courses#index"`. We uses `params` helper to parse request parameters.
 
+**Scaffolding** is a ability to generate code (views, controllers and processes). Rails by default uses SQLite for database.**Migrations** are regular ruby code that allows to modify databases. They also allows to rollback to previous state.
+
+Scaffolding is  code generator for entities. It gets you up and running quickly.
+
+```shell
+rails new fancy_cars
+gem bundle _1.17.3_ install # install bundler older than 2.0
+bundle _1.17.3_ install # bundle install with specific bundler version
+# Create resource Car and column names and types (default type is string)
+rails g scaffold car make color year:integer
+rake db:migrate # create migration file
+rails s # now it has various routes for /cars endpoints.
+```
+
+Scaffolding can create migration, controller, views, routes, models, etc.
+
+For setting up database, we have `config/database.yml` file for configuring database.
+
+We can use `rails db` and it opens up SQLite console. From there we can type different commands using `.help`. There is also DB Browser for SQLite which is GUI for SQLite database.
+
+```shell
+.help
+.tables
+.headers on
+.mode columns
+.schema cars
+select * from cars;
+.exit
+```
+
+All tables have `created_at` and `updated_at` columns.
+
+Migrations allows for easy migration from one database to another or to make changes to databas schemas. Migrations are Ruby classes that extend `ActiveRecord::Migration`. File name needs to strat with a timestamp and followed by some name of the class. This timestamp defines the sequence of how the migrations are applied and acts as a database version of sorts or snapshot in time. Scaffolding generate migration file, but if the database is setup and we don't need to generate migration file, we can use `--no-migrtion` flag. Once migration is created, it needs to be applied to a database in order to migrate the database to its new state. No two migrations can have the same class name. Migration code maintains a table called `schema_migrations` table with one column called *version*. So, if we run `rake db:migrate` multiple times, nothing will happen.
+
+Inside migration file, `ActiveRecord::Migration` subclass, we can have `up` or `down` method, which are used to do and undo changes to the schema. Usually there will be one method `change` and Rails knows how to undo changes. We can rollback using `rake db:rollback`. Migration also gives us database independence. Ruby database adapter translates ruby code to specific database dialect. The data types we can specify include binary, boolean, date, datetime, decimal, float, integer, string ,text, time. We can also specify constraints like `null`, `unique`, `limit`, `default`, `precision`, `scale` etc.
+
+Table names in Rails are always named plural. An id column is automatically created to be used as primary key. `timestamp` method creates `created_at` and `updated_at` columns. `create_table` and `drop_table` is how the table is created and dropped. For adding columne, `add_column`, to remove column `remove_column` with table name and column name.
+
+Let's add price column to cars model. `add_column` takes table name, column name and extra has for attributes.
+
+```ruby
+rails g migration add_price_to_cars 'price:decimal{10,2}'
+rake db:migrate
+rails g migration rename_make_to_company # rename a column
+rake db:migrate
+```
+
+There is also `config/schema.rb` file wihch is the latest version of the schema. If we have hundreds of migrations, we can run `rake db:schema:load` which will load this final version of schema instead of going through all migration files one at a time.
