@@ -96,3 +96,4 @@ Bundler creates a `Gemfile.lock` file, which contains actual gem versions your a
 To integrate Httparty in Rails, we install httparty. We need to restart the server when we update Gemfile. The gem files are loaded at start of the server. By convention, controller names are plural and model names are singular.
 
 We can specify root path in routes using `root "courses#index"`. We uses `params` helper to parse request parameters.
+

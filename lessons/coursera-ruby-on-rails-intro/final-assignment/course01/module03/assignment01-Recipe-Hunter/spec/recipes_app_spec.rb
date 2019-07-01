@@ -1,4 +1,5 @@
-Capybara.default_driver = :poltergeist
+# Capybara.default_driver = :poltergeist
+Capybara.default_driver = :selenium
 
 Capybara.app_host = "http://localhost:3000"
 

@@ -1,5 +1,5 @@
-Capybara.default_driver = :selenium
-# Capybara.default_driver = :poltergeist
+# Capybara.default_driver = :selenium
+Capybara.default_driver = :poltergeist
 
 Capybara.app_host = "http://search-coursera-jhu.herokuapp.com/"
 
