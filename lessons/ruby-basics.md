@@ -260,7 +260,7 @@ end
 puts ENV["EDITOR"] # => subl
 ```
 
-[Case statement assignment](ruby-on-rails-intro/case-assignment)
+[Case statement assignment](coursera-ruby-on-rails-intro/case-assignment)
 
 ## Strings
 
@@ -449,7 +449,7 @@ puts ({ :one => "one" }) # => {:one=>"one"}
 puts one: "one"# => {:one=>"one"} 
 ```
 
-[Collections Assignment](ruby-on-rails-intro/collections-assignment)
+[Collections Assignment](coursera-ruby-on-rails-intro/collections-assignment)
 
 ## Classes
 
@@ -842,7 +842,7 @@ class Another
 end
 ```
 
-[Classes assignment](ruby-on-rails-intro/classes-assignment)
+[Classes assignment](coursera-ruby-on-rails-intro/classes-assignment)
 
 If we want to make web requests to web services, we can use HTTParty Rubygem.
 
@@ -866,3 +866,6 @@ class Coursera
 end
 
 pp Coursera.for "python" # pretty print
+```
+
+[HTTParty assginment](coursera-ruby-on-rails-intro/http-client-assignment)
