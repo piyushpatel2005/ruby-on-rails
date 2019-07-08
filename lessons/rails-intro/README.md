@@ -144,4 +144,208 @@ rails g migration rename_make_to_company # rename a column
 rake db:migrate
 ```
 
-There is also `config/schema.rb` file wihch is the latest version of the schema. If we have hundreds of migrations, we can run `rake db:schema:load` which will load this final version of schema instead of going through all migration files one at a time.
+There is also `config/schema.rb` file wihch is the latest version of the schema. If we have hundreds of migrations, we can run `rake db:schema:load` which will load this final version of schema instead of going through all migration files one at a time. When we rename a column, it is not easy. We have to add code to migration file and also make changes to view. So, Rails provides one way migrations which cannot be rolled back.
+
+## Meta Programming
+
+In static languges, compiler requires you to define all methods upfront. In dynamic languages, such as Python or Ruby methods don't have to be predefined - they need to be found when invoked. 
+
+We can call methods of an object using dot notation. There is another way to call a method in Ruby - using `send` method. The first parameter is the `method name/symbol` and the rest are `method arguments`.
+
+```ruby
+class Dog
+  def bark
+    puts "Woof. Woof!"
+  end
+  def greet (greeting)
+    puts greeting
+  end
+end
+
+dog = Dog.new
+dog.bark # Woof. Woof!
+dog.send("bark") # Woof.Woof!
+dog.send(:bark) # same as above
+method_name = :bark
+dog.send method_name # same
+dog.send(:greet, "hello") # hello
+```
+
+This is called Dynamic dispatching. We can decide at runtime which methods to call. The code doesn't need to find which method it should call.
+
+```ruby
+props  = {name: "John", age: 15 }
+class Person
+  attr_accessor :name, :age
+end
+
+person = Person.new
+props.each { |key, value | person.send("#{key}=", value)} # sets the values based on props hash
+```
+
+With Dynamic methods, we can also define method dynamically. To define methods dynamically, we have `define_method :method_name` and a block which contains the method definition. This creates instance method for a class
+
+```ruby
+class Whatever
+  define_method :make_it_up do
+    puts "Whatever ..."
+  end
+end
+
+whatever = Whatever.new
+whatever.make_it_up # Whatever...
+```
+
+We can define methods from another class into new class using this feature.
+
+```ruby
+require_relative 'store'
+class ReportingSystem
+
+  def initialize
+    @store = Store.new
+    @store.methods.grep(/^get_(.*)_desc/) { ReportingSystem.define_report_methods_for $1 }
+  end
+  
+  def self.define_report_methods_for (item)
+    define_method("get_#{item}_desc") { @store.send("get_#{item}_desc") } # these methods are defined inside Store class.
+    define_method("get_#{item}_price") { @store.send("get_#{item}_price")}
+  end
+end
+
+rs = ReportingSystem.new
+puts "#{rs.get_piano_desc} costs #{rs.get_piano_price.to_s.ljust(6,'0')}"
+```
+
+This way if someone adds new item to Store class, ReportingSystem already knows about it as long as same method naming pattern is used. This can dramatically reduce the amount of code that needs to be written.
+
+When a method is invoked, Ruby looks for the method in the class to which it belongs. Then it goes up the ancestors tree (classes and modules). If it still doesn't find the method, it calls `method_missing` method which will throw NoMethodFoundError. As this is just a method, we can override it.
+
+```ruby
+class Mystery
+  def method_missing (method, *args) 
+    puts "Looking for ..."
+    puts "\"#{metohhd}\" with params (#{args.join(',')}) ?"
+    puts "Sorry... not found ..."
+    yield "Ended up in method_missing" if block_given?
+  end
+end
+
+m = Mystery.new
+m.solve_mystery("abc", 123123) do |answer|
+  puts "And the answer is : #{answer}"
+end
+```
+
+`method_missing` gives the power to fake the methods and that's why they are called **ghost methods**. We can use `Struct` and `OpenStruct` to create classes.
+
+```ruby
+# define Customer class
+Customer = Struct.new(:name, :address) do
+  def to_s
+    "#{name} lives at #{address}"
+  end
+end
+
+jim = Customer.new ("Jim", "1000 Wall Street")
+```
+
+Now with `method_missing`, we can delegate all missing methods to superclass.
+
+```ruby
+require_relative 'store'
+
+class ReportingSystem
+  def initialize
+    @store = Store.new
+  end
+  def method_missing(name, *args)
+  # if method doesn't exist even in Store object, then handle it in Object class
+    super unless @store.respond_to?(name)
+    @store.send(name)
+  end
+end
+```
+
+## ActiveRecord
+
+ORM bridges between RDBMS and objects. It simplifies writing code for accessing database. Active Record is a design pattern in which we have model and we store attributes in that model. The logic of how this should be stored in database is also included in model. ActiveRecord is Rails default ORM. The active record classes are stored in `app/models/` directory.
+
+```ruby
+class Car < ActiveRecord::Base
+end
+```
+
+It uses conventions as follows.
+
+- ActiveRecord has to know how to find database (when Rails is loaded, this infor is read from `config/database.yml` file.)
+- By convention, the table name is plural name that corresponds to `ActiveRecord::Base` subclass with a singular name. (Car class correspond to cars table)
+- By convention, ActiveRecord expects the table to have a primary key named `id`.
+
+Open Rails console using `rails c` or `rails console`.
+
+```ruby
+Car.column_names # get column names
+Car.primary_key # get primary key
+exit
+```
+
+We can generate model using `rails g model person first_name last_name`. When we generate a model, it knows that person model should have people table. It knows this through a file `config/initializers/inflections.rb`. It knows only those model names. If we are already in the rails console and we generated a new model. Rails console does not know about the new migration, but we can reload new models using `reload!` and then we can run `Person.column_names`.
+
+```shell
+rails g model person first_name last_name
+rake db:migrate
+```
+
+### ActiveRecord CRUD
+
+To **create** new record, we can call empty constructor and attributes to set the values and then call `save`. We can also pass a hash of attributes into the constructor and then call `save`. There is third option to use create method with a hash to `create` an object and save it to the database in one step.
+
+To **retrieve/read**, we can use `find(id)` or `find(id1, id2)`. If id is not found, it throws a `RecordNotFound` exception. We can use `first`, `last`, `take`, `all` to find records. They return `nil` if record is not found. We can also order by some column name using `order(:column)` or `order(column: :desc)` to order in descending or ascending order.
+There is `pluck` method to narrows down which fields are coming back.
+With `where(hash)`, we can supply conditions for search. This also returns `ActiveRecord::Relation` object. We can use `find_by(condition_hash)` which returns single result or `nil`.  `find_by!` will throw exception if result is not found. The `limif(n)` limits how many records are retrieved. `offset(n)` will skip to given number and bring the results. We can combine these to page through large collection of records.
+
+To **update** record in database, we can retrieve a record, modify and then `save`. We can also do it by retrieving a record, then call `update` method passing in a hash of attributes with new values. There is also `update_all` to update many records. For this method, we retrieve multiple records using `where` instead of `find_by`.
+
+To **delete** a record, we can use `destroy(id)` or retrieve a record and call `destroy` on that object. It removes a particular instance from the DB. It also instantiates an object first and performs callbacks before removing. Another way to delete a record is to use `delete(id)`. It removes the row from DB. There is also `delete_all` which is dangerous.
+
+```ruby
+p1 = Person.new;
+p1.first_name = "Joe"; p1.last_name = "Smith"
+p1.save
+
+p2 = Person.new(first_name: "John", last_name: "Doe"); p2.save
+
+p3 = Person.create(first_name: "Jane", last_name: "Doe")
+
+Person.all.order(first_name: :desc) # gives ActiveRecord::Relation object which can be converted to array using to_a
+Person.all.order(first_name: :desc).to_a
+Person.first
+Person.all.first
+Person.all[0]
+Person.take # gives any random record
+Person.take 2
+Person.all.map { |person| person.first_name }
+Person.pluck(:first_name) # same as above, but more performant
+Person.where(last_name: "Doe")
+Person.where(last_name: "Doe").first
+Person.where(last_name: "Doe").pluck(:first_name) # pluck returns array
+Person.find_By(last_name: "Doe") # will give one record only
+Person.find_by(last_name: "Nosuchdude") # returns nil
+Person.find_by!(last_name: "Unknown") # gives Exception ActiveRecord::RecordNotFound
+Person.count
+Person.offset(2).limit(1).map{ |person| "#{person.first_name} #{person.last_name}" }
+Person.offset(1).limit(1).all.map { |person| "#{person.first_name} #{person.last_name}" }
+
+jane = Person.find_by first_name: "Jane"
+jane.last_name = "Smithie"
+jane.save
+Person.find_by(last_name: "Smith").update(last_name: "Smithson")
+
+Person.count # 3
+jane = Person.find_by first_name: "Jane"
+jane.destroy
+joe = Person.find_By first_name: "Joe"
+Person.delete(joe.id)
+Person.count # 1
+```
