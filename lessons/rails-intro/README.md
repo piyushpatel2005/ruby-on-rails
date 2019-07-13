@@ -349,3 +349,133 @@ joe = Person.find_By first_name: "Joe"
 Person.delete(joe.id)
 Person.count # 1
 ```
+
+## Advanced Querying
+
+If we want to seed the database with preliminary data.
+
+```ruby
+rails new advanced_ar
+cd advanced_ar && bundle _1.17.3_ install
+rails g model person first_name age:integer last_name
+rake db:migrate
+rake --describe db:seed
+rake db:seed
+```
+
+Rails provides `db/seeds.rb` to populate the database with initial values.
+
+Update this files and then run `rake db:seed`. The `create!` method informs us if something went wrong during seeding. Check the status of the database table.
+
+```ruby
+rails db
+.headers on
+.mode columns
+select * from people
+```
+
+Sometimes, if we want to run unusual query, we can pass SQL fragments.
+However, we have to be careful with SQL injection in this case.
+
+```ruby
+Person.where("age BETWEEN 30? and 33").to_a
+Person.find_by("first_name LIKE '%man'")
+rails g migration add_login_pass_to_people login pass
+rake db:migrate
+rake db:seed
+```
+
+There are two alternatives to directly specifying SQL literals to avoid SQL injections. (1) Array condition syntax, (2) Hash condition syntax. It automatically performs conversions on the input values and escapes strings in the SQL. This is immune to SQL injection.
+
+```ruby
+rails c
+Person.where("age BETWEEN ? AND ?", 28, 34).to_a
+Person.where("first_name LIKE ? OR last_name LIKE ?", '%J%', '%J%').to_a
+# Arraysyntax has to keep track of the order or parameters in the end.
+# Even if same variable is used, we have to specify the same multiple times like '%J%'
+
+Person.where("age BETWEEN :min_age AND :max_age", min_age: 28, max_age: 32).to_a
+Person.where("first_name LIKE :pattern OR last_name LIKE :pattern", pattern: '%J%')
+```
+
+### Making associations
+
+We need to make relationship with different tables.
+- One Person can have one Personal Info (One to One). One personal_info entry *belongs to* exactly one person. so, the "belongs to" side is the one with foreign key. The convention in Rails is to have foreign key as `[singular table name]_id` like person_id. This creates `has_one` attribute in persons table and `belongs_to` in personal_infos table.
+One Person can do many jobs (one to many). One job entry *belongs to* exactly one person. The "belongs to" side is with a foreign key.
+One person can have more than one hobby and the same hobby can be taken up by many people. (Many to Many)
+
+**One to one association**
+
+```ruby
+rails g model personal_info height:float weight:float person:references # creates personal_infos table with person_id foreign key
+rake db:migrate
+.schema personal_infos
+.exit
+rails console
+bill = Person.find_by first_name: "Bill"
+bill.personal_info # if you get an error, ensure that has_one attribute is added to `person.rb` model
+reload!
+bill.personal_info
+pi1 = PersonalInfo.create height:6.5, weight:270
+bill.personal_info = pi1
+```
+
+In addition to directly assigning, `person` instance has two methods: `build_personal_info(hash)` and `create_personal_info(hash)`. `create_personal_info` creates record in the DB right away whereas `build` does not, it creates in memory. Both remove previous reference in the DB.
+
+```ruby
+bill = Person.find_by first_name: "Bill"
+bill.personal_info
+bill.build_personal_info height: 6.0, weight: 180
+bill.save
+josh = Person.find_by first_name: "Josh"
+josh.create_personal_info height: 5.5, weight: 135 # creates record right away
+```
+
+**One to many associations**
+
+```ruby
+rails g model job title company position_id person:references
+rake db:migrate
+# this creates belongs_to attribute in job model
+# we need to add `has_many` attribute in people table
+rails c
+ActiveRecord::Base.logger = nil
+Job.create company: "MS", title: "Developer", position_id: "#1234"
+p1 = Person.first
+p1.jobs
+p1.jobs << Job.first # append job to first person
+Job.first.person # get the person associated with this job
+```
+
+If we have array of jobs as `jobs` object. We can replace person's jobs using `person.jobs = jobs` whereas `person.jobs << jobs` will append jobs. `person.jobs.clear` will disassociate jobs from this person by setting foreign key to NULL. The records will still remain in respective tables. We can have jobs assigned to any person. Check out [coursera-rails-actionpack/advanced_ar/db/seeds.rb] and see how jobs are created for first and last person. This way jobs `create` and `where` function can be scoped to a person.
+
+```ruby
+rake db:seed
+rails c
+ActiveRecord::Base.logger = nil
+Person.first.jobs.where(company: "MS").count
+Person.last.jobs.where(company: "MS").to_a
+```
+
+We can also have custom query naming. For example, if we want our queries to have `Person.my_jobs` function, we can add an attribute in person model, `has_many :my_jobs, class_name: "Job"`. This will allow us to query just like we can do with `job` method.
+
+```ruby
+rails c
+Person.first.jobs
+Person.first.my_jobs # same query and result as above
+```
+
+`has_many`, `has_one` and `belongs_to` support `:dependent` option which lets you specify the fate of association when the parent gets destroyed. 
+`:delete` - remove associated objects
+`:destroy` - same as above, but remove the association by calling `destroy` on it.
+`:nullify` - set the FK to NULL and leave associated entity alone, only disassociate.
+
+For example, if we want personal_info to be removed, we can add `has_one :personal_info, dependent: :destroy`  to person model.
+
+```ruby
+mike = Person.find_by first_name: "Michael"
+mike.personal_info
+mike.destroy
+PersonInfo.find 6 # could not find it
+```
