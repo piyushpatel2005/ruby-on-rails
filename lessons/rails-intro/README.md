@@ -448,7 +448,7 @@ p1.jobs << Job.first # append job to first person
 Job.first.person # get the person associated with this job
 ```
 
-If we have array of jobs as `jobs` object. We can replace person's jobs using `person.jobs = jobs` whereas `person.jobs << jobs` will append jobs. `person.jobs.clear` will disassociate jobs from this person by setting foreign key to NULL. The records will still remain in respective tables. We can have jobs assigned to any person. Check out [coursera-rails-actionpack/advanced_ar/db/seeds.rb] and see how jobs are created for first and last person. This way jobs `create` and `where` function can be scoped to a person.
+If we have array of jobs as `jobs` object. We can replace person's jobs using `person.jobs = jobs` whereas `person.jobs << jobs` will append jobs. `person.jobs.clear` will disassociate jobs from this person by setting foreign key to NULL. The records will still remain in respective tables. We can have jobs assigned to any person. Check out [seeds file](coursera-rails-actionpack/advanced_ar/db/seeds.rb) and see how jobs are created for first and last person. This way jobs `create` and `where` function can be scoped to a person.
 
 ```ruby
 rake db:seed
@@ -479,3 +479,42 @@ mike.personal_info
 mike.destroy
 PersonInfo.find 6 # could not find it
 ```
+
+**Many to many associations**
+
+ActiveRecord has `has_and_belongs_to_many` (habtm) for many to many associations. In this association, we need third join table that has primary key for creating association. The convention is to have plural model names separated by underscore and ordered alphabetically. This does not require a model. Many to many contains 2 models and 3 migrations.
+
+```ruby
+rails g model hobby name # This expects intermediate table hobbies_people and not people_hobbies.
+rails g migration create_hobbies_people person:references hobby:references
+rails db
+.schema %hobbies%
+# add `has_and_belongs_to_many` attribute in both classes.
+rails c
+josh = Person.find_by first_name: "Josh"
+lebron = Person.find_by first_name: "LeBron"
+programming = Hobby.create name: "Programming"
+josh.hobbies << programming
+lebron.hobbies << programming
+programming.people
+```
+
+Sometimes, we need to keep some data on the join table. Sometimes, we also need to store grandchild relationships on a model, like user -> articles -> comments and we want to find comments for a particular user. In this example, let's say we have salary table and we want to find all salary ranges for a particular person.
+
+For such scenarios, ActiveRecord provides a `:through` option for this. So, we have salary range for a job. and a job is associated with a person. Take a look at the syntax [person.rb](coursera-rails-actionpack/advanced_ar/app/models/person.rb). This makes finding approximate salary for a person to go through jobs model.
+
+If we want to find max_salary for person model, we can add a method in the model.
+
+```ruby
+rails g model salary_range min_salary:float max_salary:float job:references
+rake db:migrate
+rails c
+lebron = Person.find_by first_name: "LeBron"
+lebron.jobs.count
+lebron.jobs.pluck(:id) # returns 8,9 id numbers
+Job.find(8).create_salary_range(min_salary: 10000.00, max_salary: 20000.00)
+Job.find(8).create_salary_range(min_salary: 15000.00, max_salary: 35000.00)
+lebron.approx_salaries # returns both salary ranges
+lebron.max_salary
+```
+
