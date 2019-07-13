@@ -350,7 +350,7 @@ Person.delete(joe.id)
 Person.count # 1
 ```
 
-## Advanced Querying
+### Advanced Querying
 
 If we want to seed the database with preliminary data.
 
@@ -516,5 +516,63 @@ Job.find(8).create_salary_range(min_salary: 10000.00, max_salary: 20000.00)
 Job.find(8).create_salary_range(min_salary: 15000.00, max_salary: 35000.00)
 lebron.approx_salaries # returns both salary ranges
 lebron.max_salary
+```
+
+### Scopes in ActiveRecord
+
+- **default_scope:** Class method for specifying how the records are retrieved by default form the database (instead of relying on the database default). We can specify `default_scope { order :name }` and it will order results for specific model by name. If we want results not by scope, then we can run query like `Hobby.unscoped.pluck :name` which will give results based on database defaults.
+- **named scope:** requires name of scope and lambda for that scope. It acts as class methods. Look at [person.rb](coursera-rails-actionpack/advanced_ar/app/models/person.rb) for example.
+
+
+
+```ruby
+rails c
+Hobby.pluck :name
+Hobby.unscoped.pluck :name
+Person.ordered_by_age.pluck :age
+# chaining scopes
+Person.ordered_by_age.starts_with("Jo").pluck :age, :first_name
+Person.ordered_by_age>limit(2).starts_with("Jo").pluck :age, :first_name
+```
+
+### Validations
+
+ActiveRecord provides many built-in validators. For example, 
+- `presence: true` to make sure the field contains some data. 
+- `uniqueness: true` checks to ensure that the column value is unique. Add `validates :title, :company, presence: true` line in job model.
+- `:numericality` validates numeric input
+- `:length` validates value of certain length
+- `:format` validates value complies with some regular expression
+- `:inclusion` validates value is inside specified range.
+- `:excelusion` validates value is out of the specified range.
+
+We can also write our own validators. We need to write a method that does some validation and calls `errors.add(columnname, error)` when an error occurs. Specify it as a symbol for `validate` method. Check [salary_range.rb](coursera-rails-actionpack/advanced_ar/app/models/salary_range.rb).
+
+```ruby
+rails c
+job = Job.new
+job.errors # no error yet
+job.save # now saving process, so it first validates
+job.errors # now contains error
+job.errors.full_messages
+
+sr = SalaryRange.create min_salary: 30000.00, max_salary: 10000.00
+sr.errors
+sr.errors.full_messages
+sr.save! # throws exeption with bang
+```
+
+```ruby
+rails c
+Person.first.personal_info.weight
+Person.all.each {|p| puts p.personal_info.weight } # runs individual queries for each person's weight, which is inefficient query. 
+# It queries too many times to the database.
+Person.includes(:personal_info).all.each{ |p| puts p.personal_info.weight }
+
+# Creating transactions with different models
+Account.transaction do
+  balance.save!
+  account.save!
+end
 ```
 
