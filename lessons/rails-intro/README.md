@@ -520,7 +520,7 @@ lebron.max_salary
 
 ### Scopes in ActiveRecord
 
-- **default_scope:** Class method for specifying how the records are retrieved by default form the database (instead of relying on the database default). We can specify `default_scope { order :name }` and it will order results for specific model by name. If we want results not by scope, then we can run query like `Hobby.unscoped.pluck :name` which will give results based on database defaults.
+- **default_scope:** Class method for specifying how the records are retrieved by default form the database (instead of relying on the database default). We can specify `default_scope { order :name }` and it will order results for specific model by name. If we want results not by scope, then we can run query like `Hobby.unscoped.pluck :name` which will give results based on database defaults. Chec[hobby.rb](coursera-rails-actionpack/advanced_ar/app/models/hobby.rb). 
 - **named scope:** requires name of scope and lambda for that scope. It acts as class methods. Look at [person.rb](coursera-rails-actionpack/advanced_ar/app/models/person.rb) for example.
 
 
@@ -576,3 +576,6 @@ Account.transaction do
 end
 ```
 
+## Action Pack
+
+Action Pack is a ruby gem and allows to expose data to the world using REST API.
