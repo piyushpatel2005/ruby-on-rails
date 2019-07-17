@@ -578,4 +578,31 @@ end
 
 ## Action Pack
 
-Action Pack is a ruby gem and allows to expose data to the world using REST API.
+Action Pack is a ruby gem and allows to expose data to the world using REST API. ActionPack is combination of ActionController and ActionView.
+
+
+```ruby
+rails new my_blog
+cd my_blog
+bundle _1.17.3_ install
+rails g scaffold post title content:text
+rake db:migrate
+```
+
+Ruby code can be embedded in erb files using `<% ... %>` or evaluated using `<%= ... %>`.
+Action controller is a ruby class containing one or more actions. Each action is responsible for responding to a request to perform some task. Unless stated, when action is finished, it renders a view with the same name as the action. The action always needs to be mapped in `config/routes.rb` file.
+
+| HTTP Method | Named Routes | Parameters | Controller Action | Purpose |
+|:------------|:-------------|:-----------|:------------------|:----------|
+| GET | posts_path | | index | List all |
+| GET | post_path | ID | show | Show one |
+| GET | new_post_path |  | new | Provide form to input new post |
+| POST | posts_path | Record hash | create | Create new record |
+| GET | edit_post_path | ID | edit | Provide form to edit post |
+| PUT/PATCH | post_path | ID and record hash | update | Update record |
+| DELETE | post_path | ID | destroy | Remove record |
+
+```shell
+rake routes # list all available routes
+```
+
