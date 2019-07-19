@@ -606,3 +606,33 @@ Action controller is a ruby class containing one or more actions. Each action is
 rake routes # list all available routes
 ```
 
+Application routing maps to `app/controllers/posts_controller.rb` file where it specifies what to do when a request is made to specific end point. By default, it will send the view with the same name, for example, `/posts` will execute `index` method from respective controller and dispaly `index.html.erb` from views.
+
+Before executing `show`, `edit`, `update` or `destroy` method, we need to set the post. That is what is specified using `before_action :set_post, only: [:show, :edit, :update, :destroy]` at the beginning of the class. 
+
+Rails has helper `respond_to` that specifies how to respond to a request based on request format. It takes an optional block where the argument is the format (html, json, xml, etc). There is `redirect_to` helper which asks browser to redirect to another URL (takes full URL).
+
+`new` method is used to create new empty post which will be displayed in form. When the form is filled up, it is added to database using `create` method. Once the object has been saved, we redirect to `show` template. If unsuccessful, render the `new` action template again. Strong parameters make sure we are updating only the expect number of fields.
+
+```ruby
+def post_params
+  params.require(:post).permit(:title, :content)
+end
+```
+
+We can use flash to send messages to client after the posts has been created, updated or deleted. This is available for only one request after the first successful or unsuccessful request. It is done using `flash[:attribute] = value`. For example, `:notice` and `:alert` are used for such messages.
+
+Similar to `new` and `create` methods, `edit` and `update` methods work together. One shows the form to update the fields and another respond to post method and update the actual record.
+
+`application.html.erb` layouts code for entire application. Partials are similar to regular templates but have a more refined set of capabilities. They are named with underscore as leading character. When rendered, they are rendered wiwht `render 'partialname'` (no underscore). `render` method also accepts a second argument as hash of local variables. We can also pass a specific object to it. For example, `<%= render @post %>` will render a partial from `app/views/posts/_post.html.erb` and automatically assign a local variable `post`. We can render a collection of partials using `<%= render @posts %>` which is same as iterating on post objects and rendering that post partial.
+
+In form partial, `form_for` helper, works for new post or update of the post. `form_for` generates form tag for passed in object. Unlike regular HTML form, Rails uses POST by default. There is `f.label` which generates label tag. We can also pass second string parameter to customize it. `f.text_field` generates input type="text" field. It uses `:placeholder` hash entry to specify a placeholder to be displayed inside the field until the user proves a value. Similarly, there is `f.text_area` which has size. `f.date_select` will generate year, month and day selection. There is `f.time_select`, `f.datetime_select`. There is `distance_of_time_in_words_to_now` to display duration. Other helpers include `search_field`, `telephone_field`, `url_field`, `email_field`, `number_field`, `range_field` for new type of form fields. `f.submit` will create submit button. It will automatically create "Create Post".
+
+```ruby
+<%= f.label :title, "Heading" %>
+<%= f.text_field :title, placeholder: "Fill up your description" %>
+<%= f.text_area :content, size: "10x3" %>
+<%= f.date_select %>
+```
+
+We can have `posts.html.erb` which will be layout for all posts templates. Inside controller also, we can have `layout` method to set a layout for the entire controller like `layout 'some_layout'`. We can also specify layout for a specific action with an explicit call to `render layout: 'my_layout'` inside the action. If we don't want a layout, we can say `render layout: false`.
