@@ -636,3 +636,102 @@ In form partial, `form_for` helper, works for new post or update of the post. `f
 ```
 
 We can have `posts.html.erb` which will be layout for all posts templates. Inside controller also, we can have `layout` method to set a layout for the entire controller like `layout 'some_layout'`. We can also specify layout for a specific action with an explicit call to `render layout: 'my_layout'` inside the action. If we don't want a layout, we can say `render layout: false`.
+
+
+## Security
+
+```shell
+rails new i_reviewed
+cd i_reviewed
+bundle _1.17.3_ install
+```
+
+There will be three tables reivewers, books and notes table. A book can be reviewed by many reviewers.
+
+```shell
+rails g model reviewer name password_digest -q # -q means quiet operation
+rails g model book name author reviewer:references -q
+rails g model note title note:text book:references -q
+rake db:migrate
+rake db:seed
+rails db
+.headers on
+.mode columns
+select * from books;
+.exit
+rails g scaffold_controller book name author # create only controllers and views for models
+```
+
+Note resource depends on a book. Notes are on a book. Rails calls such resources as "nested resources"
+
+```shell
+rails g controller notes
+```
+
+In Routes, we can specify notes as nested resources using
+
+```ruby
+resources :books do
+  resources :notes
+end
+```
+
+`rake  routes` shows which routes are created with this changes. If we want only specific actions, we can specify that in  `routes.rb` file. Specify `resources :notes, only: [:create, :destroy]`.
+
+Rails has  `content_tag` which is helper to generate HTML content.
+
+
+```shell
+rails c
+helper.content_tag :p, "Hello World"
+helper.content_tag(:div, helper.content_tag(:p, "Cool"), class: "world")
+```
+
+### Authentication and Authorization
+
+
+For authentication, we can store `has_secure_password`. We need to enable `bcrypt-ruby` and run `bundle install`. We need to have a column `password_digest`. In Reviewer model, we add `has_secure_password` which says that this model has virtual column in database which is password_digest by convention. The password will be stored in hashed format which is one way process and difficult to decrypt the data.
+
+```shell
+rails c
+Reviewer.column_names
+Reviewer.create! name: "Joe", password: "abc123"
+joe = Reviewer.find_by name: "Joe"
+joe.authenticate("somepassword") # false
+joe.authenticate("abc123") # joe object returned
+```
+
+`has_secure_password` enables `authenticate` method.
+
+```shell
+rails c
+Reviewer.first.books.count
+Reviewer.last.books.count
+Reviewer.first.books.pluck :name
+Reviewer.last.books.pluck :name
+```
+
+Cookies and sessions enable us to maintain state between client and server. Session is created and made available through `session` hash. The server sends the browser a cookie with the session information, which the browser stores and sends back to the server on all subsequent requests (until session ends).
+
+```shell
+rails g controller sessions new create destroy -q
+```
+
+Add routes to `routes.rb` file. We can think of `new` action as login page and `destroy` as a logout page for session. We need new and create actions for creating and destroy action to destroy session. We add custom routing which will be for `/login` and `/logout` routes. We refer to this routes as `logout_path` and `login_path` by passing `as: "login"` in `routes.rb` file.
+
+If we want to lock down any action, we can have a `before_action` in the ApplicationController (from which all controllers inherit) that will make you login if you are not logged in yet. Now that everything is blocked, controllers can override `before_action` with `skip_before_action` method.
+
+So, look at [application_controller.rb](coursera-rails-actionpack/i_reviewed/app/controllers/application_controller.rb) for this example. In [sessions_controller.rb](coursera-rails-actionpack/i_reviewed/app/controllers/sessions_controller.rb), we have `skip_before_action :ensure_login, only [:new, :create]` which enables to login even if everything is blocked.
+
+If we want to define our own helper methods, for example, we want `logged_in?` and `current_user` helper methods and make them available to all controllers and views via `helper_method` in `application_controller.rb`. We can add logic to `application.html.erb` for logging out and information about who is logged in.
+
+To limit the visiblity of books, we can use `current_user` in `books_controller.rb` file.
+
+For **pagination**, we need to include `will_paginate` gem. Run `bundle`. Include one line code in controller and view.
+
+In `books_contoller.rb` file, we added `@books = current_user.books.paginate(page: params[:page], per_page: 10)` line in `index` method. In `books/index.html.erb` this line is added `<%= will_paginate @books %>` which will display pages with links.
+
+```shell
+rails c
+Reviewer.first.books.paginate(page: 3, per_page: 10)
+```
