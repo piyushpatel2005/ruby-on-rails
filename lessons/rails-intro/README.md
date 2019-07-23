@@ -735,3 +735,26 @@ In `books_contoller.rb` file, we added `@books = current_user.books.paginate(pag
 rails c
 Reviewer.first.books.paginate(page: 3, per_page: 10)
 ```
+
+To **deploy to Heroku**, we have to include postgres in production gem.
+
+```ruby
+group :production do
+  gem 'pg'
+  gem 'rails_12factor'
+end
+```
+
+Then, we run `bundle --without production`. Make our git repository ready for deploying.
+
+```shell
+heroku login
+heroku create ireview_books # this adds remote to heroku where we can push
+git push heroku master # this runs tests and deploys app
+# we have to run migrations for database
+heroku run rake db:migrate
+heroku run rake db:seed # seed the data
+heroku logs
+```
+
+To enable SSL, in `config/environments/production.rb` file enable ssl using `config.force_ssl=true`. Again commit and push to heroku remote.
